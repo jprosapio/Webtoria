@@ -13,6 +13,7 @@ namespace Webtoria
         private List<Country> allCountries = new List<Country>();
         private double popMovementRate = .2;
         private int numTurns = 50;
+        private double maxPopsMoved = .1;
 
         public void runGame()
         {
@@ -36,36 +37,38 @@ namespace Webtoria
         private void CalculateChanges()
         {
             //First, sort the countries by QoL
-            //List<Order> SortedList = objListOrder.OrderBy(o => o.OrderDate).ToList();
-            List<Country> tempList = allCountries.OrderByDescending(o => o.qualityOfLife).ToList();
-            allCountries = tempList;
-            
-
             //Iterate through list of countries
-            foreach (Country countryA in allCountries)
+            foreach (Country countryA in allCountries.OrderByDescending(o => o.qualityOfLife).ToList())
             {
                 //Check if another country has a higher QoL
-                foreach (Country countryB in allCountries)
+                foreach (Country countryB in allCountries.OrderByDescending(o => o.qualityOfLife).ToList())
                 {
                     //Skip the current country
                     if (countryA == countryB)
                         continue;
 
                     //If current country has a lower QoL than another country, move pops
-                    if (countryA.qualityOfLife < countryB.qualityOfLife)
+                    if (countryA.qualityOfLife > countryB.qualityOfLife)
                     {
                         //First, move pops
-                        double movementRate = (countryB.qualityOfLife / countryA.qualityOfLife) * popMovementRate;
-                        int popsMoved = (int)(movementRate * countryA.pops);
-                        if (popsMoved >= countryA.pops)
-                            popsMoved = countryA.pops - 1;
-                        Console.WriteLine("Low Country:\t" + countryA.name + "\tHighCountry:\t" + countryB.name + "\tRate:\t" + movementRate + "\tMoved:\t" + popsMoved);
-                        countryA.pops = countryA.pops - popsMoved;
-                        countryB.pops = countryB.pops + popsMoved;
+                        double movementRate = (countryA.qualityOfLife / countryB.qualityOfLife) * popMovementRate;
+                        int popsMoved = (int)(movementRate * countryB.population.Count);
+                        if (popsMoved > (int)(countryB.population.Count * maxPopsMoved))
+                            popsMoved = (int)(countryB.population.Count * maxPopsMoved);
+                        if (popsMoved >= countryB.population.Count)
+                            popsMoved = countryB.population.Count - 1;
+                        Console.WriteLine("Low Country:\t" + countryB.name + "\tHighCountry:\t" + countryA.name + "\tRate:\t" + movementRate + "\tMoved:\t" + popsMoved);
+                        for (int i=0; i< popsMoved; i++)
+                        {
+                            countryB.movePopFrom(countryB.population[0], countryA);
+                        }
                     }
                 }
                 //Then recalculate QoL
-                countryA.qualityOfLife += (countryA.totalJobs - countryA.pops);
+                countryA.calculateQoL();
+
+                //Then grow the population in the countries
+                countryA.haveBabies();
             }
         }
 
@@ -83,7 +86,7 @@ namespace Webtoria
         private void WriteCountryInfo(Country country)
         {
             Console.WriteLine(country.name);
-            Console.WriteLine("Pops:\t" + country.pops);
+            Console.WriteLine("Pops:\t" + country.population.Count);
             Console.WriteLine("Jobs:\t" + country.totalJobs);
             Console.WriteLine("QoL:\t" + country.qualityOfLife);
             Console.WriteLine();

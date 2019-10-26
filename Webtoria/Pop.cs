@@ -7,5 +7,15 @@ namespace Webtoria
     class Pop
     {
         public int job;
+
+        public Pop (int jobID = -1)
+        {
+            this.job = jobID;
+        }
+
+        public void setJob(int jobID)
+        {
+            this.job = jobID;
+        }
     }
 }
